@@ -22,7 +22,7 @@ import Data.Time (UTCTime)
 
 type ItemId = String -- identificador único do item
 
-type Inventario = Map.Map ItemId Int -- quantidade de itens no inventário Map ItemId Int
+type Inventario = Map.Map ItemId Item -- mapa de itens no inventário
 
 ----------------------------------------------
 -- Registrar tipo item
