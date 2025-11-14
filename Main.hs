@@ -21,7 +21,7 @@ import Core.Data
   )
 
 import qualified Core.Logic as Logic
-import Relatorio (resumoRelatorio, ResumoRelatorio(..))
+import Relatorio (resumoRelatorio, ResumoRelatorio(..), logsDeErro)
 
 -----------------------------------------------
 -- Constantes de arquivos
@@ -233,6 +233,7 @@ printItem item = putStrLn $
 imprimirRelatorio :: [LogEntry] -> IO ()
 imprimirRelatorio logs = do
   let resumo = resumoRelatorio logs
+  let falhas = logsDeErro logs
 
   putStrLn "\n=== RELATORIO DO BAU - MINECRAFT ==="
 
@@ -253,6 +254,17 @@ imprimirRelatorio logs = do
         then putStrLn "Nenhuma acao registrada."
         else mapM_ imprimirAcao (Map.toList (porAcao resumo))
 
+      -- Exibir falhas se houver
+      if null falhas
+        then do
+          putStrLn "\nFalhas:"
+          putStrLn "----------------------------------"
+          putStrLn "Nenhuma falha registrada."
+        else do
+          putStrLn "\nFalhas:"
+          putStrLn "----------------------------------"
+          mapM_ imprimirFalha (zip [1..] falhas)
+
       putStrLn "\n==================================\n"
 
   where
@@ -265,6 +277,11 @@ imprimirRelatorio logs = do
     imprimirAcao :: (AcaoLog, Int) -> IO ()
     imprimirAcao (acaoLog, freq) =
       putStrLn $ "  " ++ show acaoLog ++ ": " ++ show freq ++ " vez(es)"
+
+    imprimirFalha :: (Int, LogEntry) -> IO ()
+    imprimirFalha (num, logEntry) =
+      putStrLn $ "  " ++ show num ++ ". [" ++ show (acao logEntry) ++ "] " ++
+                 detalhes logEntry ++ " (" ++ show (timestamp logEntry) ++ ")"
 
 -- Imprime a ajuda de comandos
 imprimirAjuda :: IO ()
