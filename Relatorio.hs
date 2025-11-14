@@ -21,7 +21,7 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe (mapMaybe)
 
 import Core.Data
-  ( ItemId
+  ( ItemID
   , AcaoLog(..)
   , StatusLog(..)
   , LogEntry(..)
@@ -31,15 +31,15 @@ import Core.Data
 -- Extração de informações dos logs
 -----------------------------------------------
 
--- Extrai ItemId do campo detalhes do LogEntry se existir
+-- Extrai ItemID do campo detalhes do LogEntry se existir
 -- Procura padrão como "id:ESPADA01" ou similar
-extrairItemId :: LogEntry -> Maybe ItemId
+extrairItemId :: LogEntry -> Maybe ItemID
 extrairItemId LogEntry{detalhes = d} =
   case procurarPrefixo "id:" d of
     Nothing -> Nothing
     Just resto ->
-      let itemId = takeWhile (\c -> c /= ' ' && c /= '/' && c /= ')' && c /= ',') resto
-      in if null itemId then Nothing else Just itemId
+      let itemID = takeWhile (\c -> c /= ' ' && c /= '/' && c /= ')' && c /= ',') resto
+      in if null itemID then Nothing else Just itemID
   where
     -- Procura um prefixo e retorna a string após ele
     procurarPrefixo :: Eq a => [a] -> [a] -> Maybe [a]
@@ -58,9 +58,9 @@ extrairItemId LogEntry{detalhes = d} =
 -----------------------------------------------
 
 -- Todo o histórico de logs de um item específico
-historicoPorItem :: ItemId -> [LogEntry] -> [LogEntry]
-historicoPorItem itemIdBusca =
-  filter (\le -> extrairItemId le == Just itemIdBusca)
+historicoPorItem :: ItemID -> [LogEntry] -> [LogEntry]
+historicoPorItem itemIDBusca =
+  filter (\le -> extrairItemId le == Just itemIDBusca)
 
 -- Apenas as entradas com erro (StatusLog = Falha ...)
 logsDeErro :: [LogEntry] -> [LogEntry]

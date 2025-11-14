@@ -5,7 +5,7 @@ module Core.Data
   ( -- * Tipos de dados
     Item (..),
     Inventario,
-    ItemId,
+    ItemID,
     AcaoLog (..),
     LogEntry (..),
     StatusLog (..),
@@ -20,16 +20,16 @@ import Data.Map.Strict qualified as Map
 -- Tipo para representar um timestamp
 import Data.Time (UTCTime)
 
-type ItemId = String -- identificador único do item
+type ItemID = String -- identificador único do item
 
-type Inventario = Map.Map ItemId Item -- mapa de itens no inventário
+type Inventario = Map.Map ItemID Item -- mapa de itens no inventário
 
 ----------------------------------------------
 -- Registrar tipo item
 ----------------------------------------------
 
 data Item = Item
-  { itemId :: ItemId,
+  { itemID :: ItemID,
     nome :: String,
     quantidade :: Int,
     categoria :: String

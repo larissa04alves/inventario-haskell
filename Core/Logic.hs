@@ -17,7 +17,7 @@ import Data.Time (UTCTime)
 
 import Core.Data
   ( Item(..)
-  , ItemId
+  , ItemID
   , Inventario
   , AcaoLog(..)
   , StatusLog(..)
@@ -37,22 +37,22 @@ import Core.Data
 adicionarItem ::
   Inventario ->
   UTCTime -> -- timestamp
-  ItemId ->
+  ItemID ->
   String -> -- nome
   Int -> -- quantidade a adicionar
   String -> -- categoria
   Either String (Inventario, LogEntry)
 
-adicionarItem inventarioAtual agora itemId nomeItem qtdEntrada categoriaItem =
+adicionarItem inventarioAtual agora itemID nomeItem qtdEntrada categoriaItem =
   let quantidadeOk = normalizarQuantidade qtdEntrada
-  in case Map.lookup itemId inventarioAtual of
+  in case Map.lookup itemID inventarioAtual of
         Nothing ->
           -- Item não existe: criar novo
-          let novoItem = Item { itemId = itemId,
+          let novoItem = Item { itemID = itemID,
                                 nome = nomeItem,
                                 quantidade = quantidadeOk,
                                 categoria = categoriaItem }
-              inventarioNovo = Map.insert itemId novoItem inventarioAtual
+              inventarioNovo = Map.insert itemID novoItem inventarioAtual
               logEntry = LogEntry
                 { timestamp = agora,
                   acao = Adicionar,
@@ -65,7 +65,7 @@ adicionarItem inventarioAtual agora itemId nomeItem qtdEntrada categoriaItem =
           -- Item existe: incrementar quantidade
           let novaQuantidade = normalizarQuantidade (quantidade itemExistente + quantidadeOk)
               itemAtualizado = itemExistente { quantidade = novaQuantidade }
-              inventarioNovo = Map.insert itemId itemAtualizado inventarioAtual
+              inventarioNovo = Map.insert itemID itemAtualizado inventarioAtual
               logEntry = LogEntry
                 { timestamp = agora,
                   acao = Adicionar,
@@ -86,14 +86,14 @@ adicionarItem inventarioAtual agora itemId nomeItem qtdEntrada categoriaItem =
 removerItem ::
   Inventario ->
   UTCTime -> -- timestamp
-  ItemId ->
+  ItemID ->
   Int -> -- quantidade a remover
   Either String (Inventario, LogEntry)
 
-removerItem inventarioAtual agora itemId qtdRemover =
-  case Map.lookup itemId inventarioAtual of
+removerItem inventarioAtual agora itemID qtdRemover =
+  case Map.lookup itemID inventarioAtual of
     Nothing ->
-      Left $ "Item '" ++ itemId ++ "' não existe no seu baú"
+      Left $ "Item '" ++ itemID ++ "' não existe no seu baú"
 
     Just itemExistente ->
       let quantidadeOk = normalizarQuantidade qtdRemover
@@ -104,8 +104,8 @@ removerItem inventarioAtual agora itemId qtdRemover =
          else
             let novaQuantidade = quantidadeAtual - quantidadeOk
                 inventarioNovo = if novaQuantidade == 0
-                                  then Map.delete itemId inventarioAtual
-                                  else Map.insert itemId (itemExistente { quantidade = novaQuantidade }) inventarioAtual
+                                  then Map.delete itemID inventarioAtual
+                                  else Map.insert itemID (itemExistente { quantidade = novaQuantidade }) inventarioAtual
                 logEntry = LogEntry
                   { timestamp = agora,
                     acao = Remover,
@@ -125,20 +125,20 @@ removerItem inventarioAtual agora itemId qtdRemover =
 atualizarQuantidade ::
   Inventario ->
   UTCTime -> -- timestamp
-  ItemId ->
+  ItemID ->
   Int -> -- nova quantidade
   Either String (Inventario, LogEntry)
 
-atualizarQuantidade inventarioAtual agora itemId novaQtd =
-    case Map.lookup itemId inventarioAtual of
+atualizarQuantidade inventarioAtual agora itemID novaQtd =
+    case Map.lookup itemID inventarioAtual of
       Nothing ->
-        Left $ "Item '" ++ itemId ++ "' não existe no seu baú"
+        Left $ "Item '" ++ itemID ++ "' não existe no seu baú"
 
       Just itemExistente ->
         let quantidadeOk = normalizarQuantidade novaQtd
             inventarioNovo = if quantidadeOk == 0
-                              then Map.delete itemId inventarioAtual
-                              else Map.insert itemId (itemExistente { quantidade = quantidadeOk }) inventarioAtual
+                              then Map.delete itemID inventarioAtual
+                              else Map.insert itemID (itemExistente { quantidade = quantidadeOk }) inventarioAtual
             logEntry = LogEntry
               { timestamp = agora,
                 acao = Atualizar,

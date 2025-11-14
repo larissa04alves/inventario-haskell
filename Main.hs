@@ -12,7 +12,7 @@ import Text.Read (readMaybe)
 -- módulos puros
 import Core.Data
   ( Item(..)
-  , ItemId
+  , ItemID
   , Inventario
   , AcaoLog(..)
   , StatusLog(..)
@@ -94,9 +94,9 @@ carregarAuditoria = do
 -----------------------------------------------
 -- Tipo simples para command
 data Comando
-  = ComandoAdicionar ItemId String Int String
-  | ComandoRemover ItemId Int
-  | ComandoUpdate ItemId Int
+  = ComandoAdicionar ItemID String Int String
+  | ComandoRemover ItemID Int
+  | ComandoUpdate ItemID Int
   | ComandoListar
   | ComandoReport
   | ComandoAjuda
@@ -109,19 +109,19 @@ data Comando
 interpretarComando :: String -> Comando
 interpretarComando linha =
   case words linha of
-    ("adicionar":itemId:nome:qtd:categoria:[]) ->
+    ("adicionar":itemID:nome:qtd:categoria:[]) ->
       case readMaybe qtd of
-        Just n -> ComandoAdicionar itemId (replaceUnderscores nome) n (replaceUnderscores categoria)
+        Just n -> ComandoAdicionar itemID (replaceUnderscores nome) n (replaceUnderscores categoria)
         Nothing -> ComandoDesconhecido "Quantidade inválida"
 
-    ("remover":itemId:qtd:[]) ->
+    ("remover":itemID:qtd:[]) ->
       case readMaybe qtd of
-        Just n -> ComandoRemover itemId n
+        Just n -> ComandoRemover itemID n
         Nothing -> ComandoDesconhecido "Quantidade inválida"
 
-    ("update":itemId:novaQtd:[]) ->
+    ("update":itemID:novaQtd:[]) ->
       case readMaybe novaQtd of
-        Just n -> ComandoUpdate itemId n
+        Just n -> ComandoUpdate itemID n
         Nothing -> ComandoDesconhecido "Quantidade inválida"
 
     ["listar"] -> ComandoListar
@@ -144,9 +144,9 @@ interpretarComando linha =
 
 executarComando :: Inventario -> Comando -> IO Inventario
 executarComando inventario cmd = case cmd of
-  ComandoAdicionar itemId nome qtd categoria -> do
+  ComandoAdicionar itemID nome qtd categoria -> do
     agora <- getCurrentTime
-    case Logic.adicionarItem inventario agora itemId nome qtd categoria of
+    case Logic.adicionarItem inventario agora itemID nome qtd categoria of
       Left msgErro -> do
         registrarAuditoria (mensagemErro agora Adicionar msgErro)
         putStrLn $ "Erro ao adicionar item: " ++ msgErro
@@ -157,9 +157,9 @@ executarComando inventario cmd = case cmd of
         putStrLn $ "Item adicionado com sucesso: " ++ nome
         pure inventarioNovo
 
-  ComandoRemover itemId qtd -> do
+  ComandoRemover itemID qtd -> do
     agora <- getCurrentTime
-    case Logic.removerItem inventario agora itemId qtd of
+    case Logic.removerItem inventario agora itemID qtd of
       Left msgErro -> do
         registrarAuditoria (mensagemErro agora Remover msgErro)
         putStrLn $ "Erro ao remover item: " ++ msgErro
@@ -167,12 +167,12 @@ executarComando inventario cmd = case cmd of
       Right (inventarioNovo, logEntry) -> do
         salvarInventario inventarioNovo
         registrarAuditoria logEntry
-        putStrLn $ "Item removido com sucesso: " ++ itemId
+        putStrLn $ "Item removido com sucesso: " ++ itemID
         pure inventarioNovo
 
-  ComandoUpdate itemId novaQtd -> do
+  ComandoUpdate itemID novaQtd -> do
     agora <- getCurrentTime
-    case Logic.atualizarQuantidade inventario agora itemId novaQtd of
+    case Logic.atualizarQuantidade inventario agora itemID novaQtd of
       Left msgErro -> do
         registrarAuditoria (mensagemErro agora Atualizar msgErro)
         putStrLn $ "Erro ao atualizar item: " ++ msgErro
@@ -180,7 +180,7 @@ executarComando inventario cmd = case cmd of
       Right (inventarioNovo, logEntry) -> do
         salvarInventario inventarioNovo
         registrarAuditoria logEntry
-        putStrLn $ "Item atualizado com sucesso: " ++ itemId
+        putStrLn $ "Item atualizado com sucesso: " ++ itemID
         pure inventarioNovo
 
   ComandoListar -> do
@@ -224,7 +224,7 @@ mensagemErro agora acao detalhesTxt =
 -- Imprime um item formatado
 printItem :: Item -> IO ()
 printItem item = putStrLn $
-  "ID: " ++ itemId item ++
+  "ID: " ++ itemID item ++
   ", Nome: " ++ nome item ++
   ", Quantidade: " ++ show (quantidade item) ++
   ", Categoria: " ++ categoria item
@@ -272,15 +272,15 @@ imprimirAjuda = do
   putStrLn "\n=== MANUAL DO BAU - MINECRAFT ==="
   putStrLn "\nComandos disponiveis:"
   putStrLn "----------------------------------"
-  putStrLn "  adicionar <itemId> <nome> <quantidade> <categoria>"
+  putStrLn "  adicionar <itemID> <nome> <quantidade> <categoria>"
   putStrLn "    Adiciona itens ao seu bau"
   putStrLn "    Exemplo: adicionar ESPADA01 Espada_de_Diamante 1 Armas"
   putStrLn ""
-  putStrLn "  remover <itemId> <quantidade>"
+  putStrLn "  remover <itemID> <quantidade>"
   putStrLn "    Remove itens do seu bau"
   putStrLn "    Exemplo: remover ESPADA01 1"
   putStrLn ""
-  putStrLn "  update <itemId> <novaQuantidade>"
+  putStrLn "  update <itemID> <novaQuantidade>"
   putStrLn "    Atualiza a quantidade de um item"
   putStrLn "    Exemplo: update ESPADA01 5"
   putStrLn ""
