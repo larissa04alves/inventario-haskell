@@ -46,7 +46,7 @@ data AcaoLog
   | Remover
   | Atualizar
   | ConsultaFalha
-  deriving (Show, Read, Eq)
+  deriving (Show, Read, Eq, Ord)
 
 -- Resultado da tentativa (sucesso ou falha com motivo)
 
