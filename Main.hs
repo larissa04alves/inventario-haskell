@@ -21,6 +21,7 @@ import Core.Data
   )
 
 import qualified Core.Logic as Logic
+import Relatorio (resumoRelatorio, ResumoRelatorio(..))
 
 -----------------------------------------------
 -- Constantes de arquivos
@@ -231,44 +232,84 @@ printItem item = putStrLn $
 -- Imprime o relatório de auditoria
 imprimirRelatorio :: [LogEntry] -> IO ()
 imprimirRelatorio logs = do
-  let total = length logs
-      sucessos = length [ () | log <- logs, status log == Sucesso ]
-      falhas = total - sucessos
-      frequenciaAcoes = contarAcoes logs
+  let resumo = resumoRelatorio logs
 
-  putStrLn "Relatório de Auditoria:"
-  putStrLn $ "Total de ações: " ++ show total
-  putStrLn $ "Ações bem-sucedidas: " ++ show sucessos
-  putStrLn $ "Ações com falhas: " ++ show falhas
-  putStrLn "Frequência de ações:"
-  mapM_ (\(acao, freq) -> putStrLn $ "  " ++ show acao ++ ": " ++ show freq) (Map.toList frequenciaAcoes)
+  putStrLn "\n=== RELATORIO DO BAU - MINECRAFT ==="
+
+  if totalRegistros resumo == 0
+    then putStrLn "\nNenhuma atividade registrada no bau ainda.\n"
+    else do
+      putStrLn "\nEstatisticas Gerais:"
+      putStrLn "----------------------------------"
+      putStrLn $ "Total de operacoes: " ++ show (totalRegistros resumo)
+      putStrLn $ "Operacoes bem-sucedidas: " ++ show (totalSucessos resumo) ++
+                 " (" ++ porcentagem (totalSucessos resumo) (totalRegistros resumo) ++ ")"
+      putStrLn $ "Operacoes com falha: " ++ show (totalFalhas resumo) ++
+                 " (" ++ porcentagem (totalFalhas resumo) (totalRegistros resumo) ++ ")"
+
+      putStrLn "\nFrequencia de Acoes:"
+      putStrLn "----------------------------------"
+      if Map.null (porAcao resumo)
+        then putStrLn "Nenhuma acao registrada."
+        else mapM_ imprimirAcao (Map.toList (porAcao resumo))
+
+      putStrLn "\n==================================\n"
 
   where
-    contarAcoes :: [LogEntry] -> Map.Map AcaoLog Int
-    contarAcoes = foldr add Map.empty
-      where
-        add logEntry acc = Map.insertWith (+) (acao logEntry) 1 acc
+    porcentagem :: Int -> Int -> String
+    porcentagem parte total' =
+      if total' == 0
+        then "0%"
+        else show (parte * 100 `div` total') ++ "%"
+
+    imprimirAcao :: (AcaoLog, Int) -> IO ()
+    imprimirAcao (acaoLog, freq) =
+      putStrLn $ "  " ++ show acaoLog ++ ": " ++ show freq ++ " vez(es)"
 
 -- Imprime a ajuda de comandos
 imprimirAjuda :: IO ()
-imprimirAjuda = putStrLn $
-  "Comandos disponíveis:\n" ++
-  "  adicionar <itemId> <nome> <quantidade> <categoria> - Adiciona um item ao baú\n" ++
-  "  remover <itemId> <quantidade> - Remove uma quantidade de um item do baú\n" ++
-  "  update <itemId> <novaQuantidade> - Atualiza a quantidade de um item no baú\n" ++
-  "  listar - Lista todos os itens no baú\n" ++
-  "  report - Gera um relatório de auditoria\n" ++
-  "  ajuda - Mostra esta ajuda\n" ++
-  "  sair - Fecha o programa\n"
+imprimirAjuda = do
+  putStrLn "\n=== MANUAL DO BAU - MINECRAFT ==="
+  putStrLn "\nComandos disponiveis:"
+  putStrLn "----------------------------------"
+  putStrLn "  adicionar <itemId> <nome> <quantidade> <categoria>"
+  putStrLn "    Adiciona itens ao seu bau"
+  putStrLn "    Exemplo: adicionar ESPADA01 Espada_de_Diamante 1 Armas"
+  putStrLn ""
+  putStrLn "  remover <itemId> <quantidade>"
+  putStrLn "    Remove itens do seu bau"
+  putStrLn "    Exemplo: remover ESPADA01 1"
+  putStrLn ""
+  putStrLn "  update <itemId> <novaQuantidade>"
+  putStrLn "    Atualiza a quantidade de um item"
+  putStrLn "    Exemplo: update ESPADA01 5"
+  putStrLn ""
+  putStrLn "  listar"
+  putStrLn "    Mostra todos os itens no bau"
+  putStrLn ""
+  putStrLn "  report"
+  putStrLn "    Gera relatorio completo de atividades"
+  putStrLn ""
+  putStrLn "  ajuda"
+  putStrLn "    Mostra este manual"
+  putStrLn ""
+  putStrLn "  sair"
+  putStrLn "    Fecha o programa"
+  putStrLn "\nDICA: Use _ (underscore) no lugar de espacos em nomes"
+  putStrLn "==================================\n"
 
 -----------------------------------------------
 -- Loop principal
 -----------------------------------------------
 main :: IO ()
 main = do
-  putStrLn "---- Inventário MineCraft ----"
+  putStrLn "\n=== Sistema de Inventario - Minecraft Bau ==="
   inventarioInicial <- carregarInventario
-  putStrLn $ "Baú carregado com sucesso: " ++ show (Map.size inventarioInicial) ++ " itens."
+  let totalItens = Map.size inventarioInicial
+  if totalItens == 0
+    then putStrLn "Bau vazio carregado. Comece adicionando itens!"
+    else putStrLn $ "Bau carregado: " ++ show totalItens ++ " tipo(s) de item(ns) encontrado(s)."
+  putStrLn "Digite 'ajuda' para ver os comandos disponiveis.\n"
   loopComandos inventarioInicial
 
 loopComandos :: Inventario -> IO ()
