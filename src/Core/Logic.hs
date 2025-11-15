@@ -1,10 +1,3 @@
--- Etapa 2: Funções puras de regra de negócio do baú
--- cada função recebe o estado atual (baú atual), os parametros das operações + UTCTime
-
--- Retorno é:
--- Sucesso: Right (baú atualizado, logEntry de sucesso)
--- Falha de lógica: Left msgErro (o módulo de I/O criará o LogEntry de falha)
-
 module Core.Logic (
   adicionarItem,
   removerItem,
@@ -29,25 +22,19 @@ import Core.Data
 -- Adicionar item ao baú
 -- Adiciona um novo item ou incrementa a quantidade se já existir
 -----------------------------------------------
--- Regras:
--- - Se não existe: cria com quantidade >= 0 (normalizada)
--- - Se existe: incrementa a quantidade (resultado sempre >= 0)
--- - Esta operação nunca falha
-
 adicionarItem ::
   Inventario ->
-  UTCTime -> -- timestamp
+  UTCTime ->
   ItemID ->
-  String -> -- nome
-  Int -> -- quantidade a adicionar
-  String -> -- categoria
+  String ->
+  Int ->
+  String ->
   Either String (Inventario, LogEntry)
 
 adicionarItem inventarioAtual agora itemID nomeItem qtdEntrada categoriaItem =
   let quantidadeOk = normalizarQuantidade qtdEntrada
   in case Map.lookup itemID inventarioAtual of
         Nothing ->
-          -- Item não existe: criar novo
           let novoItem = Item { itemID = itemID,
                                 nome = nomeItem,
                                 quantidade = quantidadeOk,
@@ -62,7 +49,6 @@ adicionarItem inventarioAtual agora itemID nomeItem qtdEntrada categoriaItem =
           in Right (inventarioNovo, logEntry)
 
         Just itemExistente ->
-          -- Item existe: incrementar quantidade
           let novaQuantidade = normalizarQuantidade (quantidade itemExistente + quantidadeOk)
               itemAtualizado = itemExistente { quantidade = novaQuantidade }
               inventarioNovo = Map.insert itemID itemAtualizado inventarioAtual
@@ -73,21 +59,17 @@ adicionarItem inventarioAtual agora itemID nomeItem qtdEntrada categoriaItem =
                   status = Sucesso
                 }
           in Right (inventarioNovo, logEntry)
-  -- não há falhas possíveis nesta operação
 
 ------------------------------------------------
 -- Remover item do baú
 -- Remove uma quantidade do item, se zerar remove o item completamente
 -----------------------------------------------
--- Regras de falha:
--- - Item não existe no baú
--- - Quantidade a remover maior que a disponível
 
 removerItem ::
   Inventario ->
-  UTCTime -> -- timestamp
+  UTCTime ->
   ItemID ->
-  Int -> -- quantidade a remover
+  Int ->
   Either String (Inventario, LogEntry)
 
 removerItem inventarioAtual agora itemID qtdRemover =
@@ -119,14 +101,12 @@ removerItem inventarioAtual agora itemID qtdRemover =
 -- Atualizar quantidade de um item no baú
 -- Define a quantidade absoluta de um item existente
 -----------------------------------------------
--- Regra de falha:
--- - Item não existe no baú
 
 atualizarQuantidade ::
   Inventario ->
-  UTCTime -> -- timestamp
+  UTCTime ->
   ItemID ->
-  Int -> -- nova quantidade
+  Int ->
   Either String (Inventario, LogEntry)
 
 atualizarQuantidade inventarioAtual agora itemID novaQtd =
@@ -151,10 +131,7 @@ atualizarQuantidade inventarioAtual agora itemID novaQtd =
 -- Listar todos os itens do baú
 -- Retorna a lista de itens ordenada por ItemId
 -----------------------------------------------
--- Esta função nunca falha, sempre retorna uma lista (pode ser vazia)
 
 listarItens :: Inventario -> [Item]
 listarItens inventarioAtual =
-  -- toAscList retorna lista de pares (ItemId, Item) ordenados por ItemId
-  -- map snd pega apenas os Items
   map snd (Map.toAscList inventarioAtual)

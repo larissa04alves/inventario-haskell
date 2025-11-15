@@ -1,7 +1,3 @@
--- Objetivo: Funções PURAS para analisar logs (sem IO)
--- Entrada: [LogEntry]
--- Saída: filtros, contagens e resumo pronto para imprimir
-
 module Relatorio
   ( historicoPorItem
   , logsDeErro
@@ -26,8 +22,6 @@ import Core.Data
 -- Extração de informações dos logs
 -----------------------------------------------
 
--- Extrai ItemID do campo detalhes do LogEntry se existir
--- Procura padrão como "id:ESPADA01" ou similar
 extrairItemId :: LogEntry -> Maybe ItemID
 extrairItemId LogEntry{detalhes = d} =
   case procurarPrefixo "id:" d of
@@ -36,7 +30,6 @@ extrairItemId LogEntry{detalhes = d} =
       let itemID = takeWhile (\c -> c /= ' ' && c /= '/' && c /= ')' && c /= ',') resto
       in if null itemID then Nothing else Just itemID
   where
-    -- Procura um prefixo e retorna a string após ele
     procurarPrefixo :: Eq a => [a] -> [a] -> Maybe [a]
     procurarPrefixo _ [] = Nothing
     procurarPrefixo pref xs
@@ -52,12 +45,10 @@ extrairItemId LogEntry{detalhes = d} =
 -- Filtros
 -----------------------------------------------
 
--- Todo o histórico de logs de um item específico
 historicoPorItem :: ItemID -> [LogEntry] -> [LogEntry]
 historicoPorItem itemIDBusca =
   filter (\le -> extrairItemId le == Just itemIDBusca)
 
--- Apenas as entradas com erro (StatusLog = Falha ...)
 logsDeErro :: [LogEntry] -> [LogEntry]
 logsDeErro = filter ehFalha
   where
@@ -68,14 +59,12 @@ logsDeErro = filter ehFalha
 -- Totais gerais
 -----------------------------------------------
 
--- Retorna (totalSucessos, totalFalhas)
 totalSucessoFalha :: [LogEntry] -> (Int, Int)
 totalSucessoFalha = foldr contarStatus (0, 0)
   where
     contarStatus LogEntry{status = Sucesso} (ok, er) = (ok + 1, er)
     contarStatus LogEntry{status = Falha _} (ok, er) = (ok, er + 1)
 
--- Contagem por tipo de ação (Adicionar, Remover, Atualizar, ConsultaFalha)
 totalPorAcao :: [LogEntry] -> Map.Map AcaoLog Int
 totalPorAcao = foldr adicionarAcao Map.empty
   where
@@ -84,8 +73,6 @@ totalPorAcao = foldr adicionarAcao Map.empty
 -----------------------------------------------
 -- Resumo completo
 -----------------------------------------------
-
--- Estrutura para exibir um resumo do relatório
 data ResumoRelatorio = ResumoRelatorio
   { totalRegistros :: Int
   , totalSucessos :: Int
@@ -94,7 +81,6 @@ data ResumoRelatorio = ResumoRelatorio
   }
   deriving (Show, Read, Eq)
 
--- Monta um resumo completo dos logs
 resumoRelatorio :: [LogEntry] -> ResumoRelatorio
 resumoRelatorio logs =
   let (sucessos, falhas) = totalSucessoFalha logs

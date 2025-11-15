@@ -1,8 +1,5 @@
--- Define os tipos de dados principais do sistema
--- Todos derivam de Show e Read
-
 module Core.Data
-  ( -- * Tipos de dados
+  (
     Item (..),
     Inventario,
     ItemID,
@@ -10,19 +7,16 @@ module Core.Data
     LogEntry (..),
     StatusLog (..),
 
-    -- * Helpers
     normalizarQuantidade,
   )
 where
 
--- Map para armazenar itens por chave (itemId)
 import Data.Map.Strict qualified as Map
--- Tipo para representar um timestamp
 import Data.Time (UTCTime)
 
-type ItemID = String -- identificador único do item
+type ItemID = String
 
-type Inventario = Map.Map ItemID Item -- mapa de itens no inventário
+type Inventario = Map.Map ItemID Item
 
 ----------------------------------------------
 -- Registrar tipo item
@@ -34,7 +28,7 @@ data Item = Item
     quantidade :: Int,
     categoria :: String
   }
-  deriving (Show, Read, Eq) -- derivando de Show, Read e Eq para facilitar a impressão e comparação, permitem salvar e carregar
+  deriving (Show, Read, Eq)
 
 ----------------------------------------------
 -- Registrar tipo log
@@ -48,11 +42,10 @@ data AcaoLog
   | ConsultaFalha
   deriving (Show, Read, Eq, Ord)
 
--- Resultado da tentativa (sucesso ou falha com motivo)
 
 data StatusLog
-  = Sucesso -- operacao realizada com sucesso
-  | Falha String -- operacao negada + mensagem de erro
+  = Sucesso
+  | Falha String
   deriving (Show, Read, Eq)
 
 ------------------------------------------------
@@ -67,7 +60,6 @@ data LogEntry = LogEntry
   }
   deriving (Show, Read, Eq)
 
--- Também serializamos o log (um por linha no arquivo de auditoria)
 
 ------------------------------------------------
 -- Funções auxiliares
@@ -76,6 +68,5 @@ data LogEntry = LogEntry
 normalizarQuantidade :: Int -> Int
 normalizarQuantidade quantidade
   | quantidade < 0 = 0
-  | otherwise = quantidade -- otherwise é o caso padrão, não é necessário escrever e significa true
+  | otherwise = quantidade
 
--- ^ Garante que quantidade nunca fique negativa dentro da lógica pura.

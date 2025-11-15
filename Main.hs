@@ -9,7 +9,6 @@ import System.Directory (doesFileExist)
 import Control.Exception (try, IOException)
 import Text.Read (readMaybe)
 
--- módulos puros
 import Core.Data
   ( Item(..)
   , ItemID
@@ -36,7 +35,6 @@ arquivoAuditoria = "Auditoria.log"
 -----------------------------------------------
 -- Função de persistencia (IO) - Inventario
 -----------------------------------------------
--- Carrega o inventario do arquivo se existir, senão retorna inventario vazio
 
 carregarInventario :: IO Inventario
 carregarInventario = do
@@ -52,25 +50,21 @@ carregarInventario = do
             Just inv -> pure inv
             Nothing  -> pure Map.empty
   where
-    -- safeRead usa reads para evitar exceções
     safeRead :: Read a => String -> Maybe a
     safeRead s = case reads s of
       [(x, "")] -> Just x
       _         -> Nothing
 
--- Salva o inventario no arquivo
 salvarInventario :: Inventario -> IO ()
 salvarInventario inventario = writeFile arquivoInventario (show inventario)
 
 -----------------------------------------------
 -- Função de persistencia (IO) - Auditoria
 -----------------------------------------------
--- Adiciona uma entrada de log ao arquivo de auditoria
 
 registrarAuditoria :: LogEntry -> IO ()
 registrarAuditoria le = appendFile arquivoAuditoria (show le <> "\n")
 
--- carrega todas as linhas de auditoria como logEntry
 
 carregarAuditoria :: IO [LogEntry]
 carregarAuditoria = do
@@ -92,7 +86,6 @@ carregarAuditoria = do
 -----------------------------------------------
 -- Parseamento de comandos (texto -> ação)
 -----------------------------------------------
--- Tipo simples para command
 data Comando
   = ComandoAdicionar
   | ComandoRemover
@@ -103,8 +96,6 @@ data Comando
   | ComandoSair
   | ComandoDesconhecido String
 
--- transforma uma linha de texto em um comando
--- regra: nome/categoria usam _ para espaços
 
 interpretarComando :: String -> Comando
 interpretarComando linha =
@@ -129,8 +120,6 @@ interpretarComando linha =
 -- Execução de comandos
 -----------------------------------------------
 
--- Funções auxiliares para entrada interativa
-
 perguntarTexto :: String -> IO String
 perguntarTexto prompt = do
   putStr $ prompt ++ ": "
@@ -154,7 +143,6 @@ perguntarInteiro prompt = do
       putStrLn "Número inválido. Digite um número inteiro não-negativo."
       perguntarInteiro prompt
 
--- executa um comando e devolve o novo inventario
 
 executarComando :: Inventario -> Comando -> IO Inventario
 executarComando inventario cmd = case cmd of
@@ -257,7 +245,6 @@ executarComando inventario cmd = case cmd of
 -- Funções de ajuda de log e impressão
 -----------------------------------------------
 
--- Constrói um LogEntry de erro
 mensagemErro :: UTCTime -> AcaoLog -> String -> LogEntry
 mensagemErro agora acao detalhesTxt =
   LogEntry
@@ -267,7 +254,6 @@ mensagemErro agora acao detalhesTxt =
       status = Falha detalhesTxt
     }
 
--- Imprime um item formatado
 printItem :: Item -> IO ()
 printItem item = putStrLn $
   "ID: " ++ itemID item ++
@@ -275,7 +261,6 @@ printItem item = putStrLn $
   ", Quantidade: " ++ show (quantidade item) ++
   ", Categoria: " ++ categoria item
 
--- Imprime o relatório de auditoria
 imprimirRelatorio :: [LogEntry] -> IO ()
 imprimirRelatorio logs = do
   let resumo = resumoRelatorio logs
@@ -300,7 +285,6 @@ imprimirRelatorio logs = do
         then putStrLn "Nenhuma acao registrada."
         else mapM_ imprimirAcao (Map.toList (porAcao resumo))
 
-      -- Exibir falhas se houver
       if null falhas
         then do
           putStrLn "\nFalhas:"
@@ -329,7 +313,6 @@ imprimirRelatorio logs = do
       putStrLn $ "  " ++ show num ++ ". [" ++ show (acao logEntry) ++ "] " ++
                  detalhes logEntry ++ " (" ++ show (timestamp logEntry) ++ ")"
 
--- Imprime a ajuda de comandos
 imprimirAjuda :: IO ()
 imprimirAjuda = do
   putStrLn "\n=== MANUAL DO BAU - MINECRAFT ==="
