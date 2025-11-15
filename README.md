@@ -1,4 +1,4 @@
-# Inventário Minecraft — Haskell (CLI)
+# Inventário Minecraft — Haskell
 
 Instituição: `PUCPR - Curitiba`
 
@@ -59,7 +59,6 @@ runghc -isrc Main.hs < src/scripts/cenario2_erro.txt
 
 ```
 runghc -isrc Main.hs
-
 ```
 
 ## Comandos Disponíveis (no prompt)
@@ -105,32 +104,32 @@ cabal run -- < src/scripts/cenario2_erro.txt
 
 ### Cenário 1 — Persistência básica
 
-Entrada: src/scripts/cenario1_persistencia.txt
+Entrada: `src/scripts/cenario1_persistencia.txt`
 Esperado:
 
-O sistema inicia, carrega (ou cria) Inventario.dat.
+O sistema `inicia`, `carrega` (ou cria) Inventario.dat.
 
-Executa listar (deve mostrar os itens populados anteriormente).
+Executa `listar`
 
-sair.
+`sair`
 Resultado observado: itens listados conforme popularização; Inventario.dat permanece com os dados.
 
 ### Cenário 2 — Erro + Sucesso na remoção
 
-Entrada: src/scripts/cenario2_erro.txt
+Entrada: `src/scripts/cenario2_erro.txt`
 Esperado:
 
-listar exibe itens.
+`listar` exibe itens.
 
-remover tenta remover mais do que disponível → falha (mensagem de quantidade insuficiente) e auditoria registrada.
+`remover` tenta remover mais do que disponível → `falha` (mensagem de quantidade insuficiente) e auditoria registrada.
 
-remover com quantidade válida → sucesso (estoque atualizado e/ou item removido se zerar).
+`remover` com quantidade válida → `sucesso` (estoque atualizado e/ou item removido se zerar).
 
-sair.
-Resultado observado (exemplo real):
+`sair`
+Resultado observado:
 
-Mensagem: Erro ao remover item: Quantidade insuficiente...
+`Mensagem`: Erro ao remover item: Quantidade insuficiente...
 
-Depois: Item removido com sucesso: OURO e listar mostra OURO com quantidade reduzida.
+`Depois`: Item removido com sucesso: OURO e listar mostra OURO com quantidade reduzida.
 
 A execução do report mostra totais, sucessos/falhas e frequência de ações com base em Auditoria.log.
