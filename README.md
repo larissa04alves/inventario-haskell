@@ -88,6 +88,7 @@ Todas as operações (sucesso/falha) geram registro com timestamp.
 ### Execução Online
 
 - Replit: o projeto já está configurado com Cabal.
+
   Link do ambiente: https://replit.com/join/tclykvfoxj-alves04larissa
 
 Clique em Run para compilar/executar.
