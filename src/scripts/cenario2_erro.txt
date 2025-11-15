@@ -1,0 +1,10 @@
+listar
+remover
+OURO
+5
+listar
+remover
+OURO
+1
+listar
+sair

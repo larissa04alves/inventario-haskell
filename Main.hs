@@ -94,9 +94,9 @@ carregarAuditoria = do
 -----------------------------------------------
 -- Tipo simples para command
 data Comando
-  = ComandoAdicionar ItemID String Int String
-  | ComandoRemover ItemID Int
-  | ComandoUpdate ItemID Int
+  = ComandoAdicionar
+  | ComandoRemover
+  | ComandoUpdate
   | ComandoListar
   | ComandoReport
   | ComandoAjuda
@@ -108,22 +108,10 @@ data Comando
 
 interpretarComando :: String -> Comando
 interpretarComando linha =
-  case words linha of
-    ("adicionar":itemID:nome:qtd:categoria:[]) ->
-      case readMaybe qtd of
-        Just n -> ComandoAdicionar itemID (replaceUnderscores nome) n (replaceUnderscores categoria)
-        Nothing -> ComandoDesconhecido "Quantidade inválida"
-
-    ("remover":itemID:qtd:[]) ->
-      case readMaybe qtd of
-        Just n -> ComandoRemover itemID n
-        Nothing -> ComandoDesconhecido "Quantidade inválida"
-
-    ("update":itemID:novaQtd:[]) ->
-      case readMaybe novaQtd of
-        Just n -> ComandoUpdate itemID n
-        Nothing -> ComandoDesconhecido "Quantidade inválida"
-
+  case words (map toLower linha) of
+    ["adicionar"] -> ComandoAdicionar
+    ["remover"] -> ComandoRemover
+    ["update"] -> ComandoUpdate
     ["listar"] -> ComandoListar
     ["report"] -> ComandoReport
     ["ajuda"] -> ComandoAjuda
@@ -132,21 +120,53 @@ interpretarComando linha =
     _ -> ComandoDesconhecido "Comando não reconhecido"
 
   where
-    -- troca _ por espaço
-    replaceUnderscores :: String -> String
-    replaceUnderscores = map (\c -> if c == '_' then ' ' else c)
+    toLower :: Char -> Char
+    toLower c
+      | c >= 'A' && c <= 'Z' = toEnum (fromEnum c + 32)
+      | otherwise = c
 
 -----------------------------------------------
 -- Execução de comandos
 -----------------------------------------------
 
+-- Funções auxiliares para entrada interativa
+
+perguntarTexto :: String -> IO String
+perguntarTexto prompt = do
+  putStr $ prompt ++ ": "
+  hFlush stdout
+  resposta <- getLine
+  let respostaSemEspacos = unwords (words resposta)
+  if null respostaSemEspacos
+    then do
+      putStrLn "Entrada vazia. Tente novamente."
+      perguntarTexto prompt
+    else pure respostaSemEspacos
+
+perguntarInteiro :: String -> IO Int
+perguntarInteiro prompt = do
+  putStr $ prompt ++ ": "
+  hFlush stdout
+  linha <- getLine
+  case readMaybe linha of
+    Just n | n >= 0 -> pure n
+    _ -> do
+      putStrLn "Número inválido. Digite um número inteiro não-negativo."
+      perguntarInteiro prompt
+
 -- executa um comando e devolve o novo inventario
 
 executarComando :: Inventario -> Comando -> IO Inventario
 executarComando inventario cmd = case cmd of
-  ComandoAdicionar itemID nome qtd categoria -> do
+  ComandoAdicionar -> do
+    putStrLn "\n--- Adicionar Item ao Baú ---"
+    itemID <- perguntarTexto "ItemID (ex: FERRO01)"
+    nomeItem <- perguntarTexto "Nome do item (ex: Minério de Ferro)"
+    qtd <- perguntarInteiro "Quantidade"
+    categoriaItem <- perguntarTexto "Categoria (ex: Minérios)"
+
     agora <- getCurrentTime
-    case Logic.adicionarItem inventario agora itemID nome qtd categoria of
+    case Logic.adicionarItem inventario agora itemID nomeItem qtd categoriaItem of
       Left msgErro -> do
         registrarAuditoria (mensagemErro agora Adicionar msgErro)
         putStrLn $ "Erro ao adicionar item: " ++ msgErro
@@ -154,34 +174,60 @@ executarComando inventario cmd = case cmd of
       Right (inventarioNovo, logEntry) -> do
         salvarInventario inventarioNovo
         registrarAuditoria logEntry
-        putStrLn $ "Item adicionado com sucesso: " ++ nome
+        putStrLn $ "Item adicionado com sucesso: " ++ nomeItem
         pure inventarioNovo
 
-  ComandoRemover itemID qtd -> do
-    agora <- getCurrentTime
-    case Logic.removerItem inventario agora itemID qtd of
-      Left msgErro -> do
-        registrarAuditoria (mensagemErro agora Remover msgErro)
-        putStrLn $ "Erro ao remover item: " ++ msgErro
+  ComandoRemover -> do
+    putStrLn "\n--- Remover Item do Baú ---"
+    let itens = Logic.listarItens inventario
+    if null itens
+      then do
+        putStrLn "Seu baú está vazio."
         pure inventario
-      Right (inventarioNovo, logEntry) -> do
-        salvarInventario inventarioNovo
-        registrarAuditoria logEntry
-        putStrLn $ "Item removido com sucesso: " ++ itemID
-        pure inventarioNovo
+      else do
+        putStrLn "Itens disponíveis:"
+        mapM_ printItem itens
+        putStrLn ""
+        itemID <- perguntarTexto "ItemID do item a remover"
+        qtd <- perguntarInteiro "Quantidade a remover"
 
-  ComandoUpdate itemID novaQtd -> do
-    agora <- getCurrentTime
-    case Logic.atualizarQuantidade inventario agora itemID novaQtd of
-      Left msgErro -> do
-        registrarAuditoria (mensagemErro agora Atualizar msgErro)
-        putStrLn $ "Erro ao atualizar item: " ++ msgErro
+        agora <- getCurrentTime
+        case Logic.removerItem inventario agora itemID qtd of
+          Left msgErro -> do
+            registrarAuditoria (mensagemErro agora Remover msgErro)
+            putStrLn $ "Erro ao remover item: " ++ msgErro
+            pure inventario
+          Right (inventarioNovo, logEntry) -> do
+            salvarInventario inventarioNovo
+            registrarAuditoria logEntry
+            putStrLn $ "Item removido com sucesso: " ++ itemID
+            pure inventarioNovo
+
+  ComandoUpdate -> do
+    putStrLn "\n--- Atualizar Quantidade do Item ---"
+    let itens = Logic.listarItens inventario
+    if null itens
+      then do
+        putStrLn "Seu baú está vazio."
         pure inventario
-      Right (inventarioNovo, logEntry) -> do
-        salvarInventario inventarioNovo
-        registrarAuditoria logEntry
-        putStrLn $ "Item atualizado com sucesso: " ++ itemID
-        pure inventarioNovo
+      else do
+        putStrLn "Itens disponíveis:"
+        mapM_ printItem itens
+        putStrLn ""
+        itemID <- perguntarTexto "ItemID do item a atualizar"
+        novaQtd <- perguntarInteiro "Nova quantidade"
+
+        agora <- getCurrentTime
+        case Logic.atualizarQuantidade inventario agora itemID novaQtd of
+          Left msgErro -> do
+            registrarAuditoria (mensagemErro agora Atualizar msgErro)
+            putStrLn $ "Erro ao atualizar item: " ++ msgErro
+            pure inventario
+          Right (inventarioNovo, logEntry) -> do
+            salvarInventario inventarioNovo
+            registrarAuditoria logEntry
+            putStrLn $ "Item atualizado com sucesso: " ++ itemID
+            pure inventarioNovo
 
   ComandoListar -> do
     let itens = Logic.listarItens inventario
@@ -289,17 +335,14 @@ imprimirAjuda = do
   putStrLn "\n=== MANUAL DO BAU - MINECRAFT ==="
   putStrLn "\nComandos disponiveis:"
   putStrLn "----------------------------------"
-  putStrLn "  adicionar <itemID> <nome> <quantidade> <categoria>"
+  putStrLn "  adicionar"
   putStrLn "    Adiciona itens ao seu bau"
-  putStrLn "    Exemplo: adicionar ESPADA01 Espada_de_Diamante 1 Armas"
   putStrLn ""
-  putStrLn "  remover <itemID> <quantidade>"
+  putStrLn "  remover"
   putStrLn "    Remove itens do seu bau"
-  putStrLn "    Exemplo: remover ESPADA01 1"
   putStrLn ""
-  putStrLn "  update <itemID> <novaQuantidade>"
+  putStrLn "  update"
   putStrLn "    Atualiza a quantidade de um item"
-  putStrLn "    Exemplo: update ESPADA01 5"
   putStrLn ""
   putStrLn "  listar"
   putStrLn "    Mostra todos os itens no bau"

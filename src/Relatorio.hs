@@ -3,17 +3,12 @@
 -- Saída: filtros, contagens e resumo pronto para imprimir
 
 module Relatorio
-  ( -- * Filtros e consultas
-    historicoPorItem
+  ( historicoPorItem
   , logsDeErro
   , totalSucessoFalha
   , totalPorAcao
-
-    -- * Resumo completo
   , ResumoRelatorio(..)
   , resumoRelatorio
-
-    -- * Helpers puros
   , extrairItemId
   ) where
 

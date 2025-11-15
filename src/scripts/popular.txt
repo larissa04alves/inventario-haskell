@@ -1,0 +1,51 @@
+adicionar
+FERRO
+Minério de Ferro
+5
+Minérios
+adicionar
+OURO
+Minério de Ouro
+2
+Minérios
+adicionar
+DIAMANTE
+Diamante Bruto
+3
+Minérios
+adicionar
+CARVAO
+Carvão Vegetal
+12
+Recursos
+adicionar
+REDSTONE
+Pó de Redstone
+20
+Recursos
+adicionar
+LAPIS
+Lapislazuli
+7
+Minérios
+adicionar
+PEDRA
+Pedra Lisa
+40
+Blocos
+adicionar
+MADEIRA
+Madeira de Carvalho
+25
+Blocos
+adicionar
+TRIGO
+Trigo
+15
+Alimentos
+adicionar
+PAO
+Pão
+8
+Alimentos
+listar
