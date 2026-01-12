@@ -1,26 +1,22 @@
--- Papel: ponto de entrada, loop de comandos, persistencia
-
 module Main where
 
-import qualified Data.Map.Strict as Map
-import Data.Time (getCurrentTime, UTCTime)
-import System.IO (hFlush, stdout)
-import System.Directory (doesFileExist)
-import Control.Exception (try, IOException)
-import Text.Read (readMaybe)
-
+import Control.Exception (IOException, try)
 import Core.Data
-  ( Item(..)
-  , ItemID
-  , Inventario
-  , AcaoLog(..)
-  , StatusLog(..)
-  , LogEntry(..)
-  , normalizarQuantidade
+  ( AcaoLog (..),
+    Inventario,
+    Item (..),
+    ItemID,
+    LogEntry (..),
+    StatusLog (..),
+    normalizarQuantidade,
   )
-
-import qualified Core.Logic as Logic
-import Relatorio (resumoRelatorio, ResumoRelatorio(..), logsDeErro)
+import Core.Logic qualified as Logic
+import Data.Map.Strict qualified as Map
+import Data.Time (UTCTime, getCurrentTime)
+import Relatorio (ResumoRelatorio (..), logsDeErro, resumoRelatorio)
+import System.Directory (doesFileExist)
+import System.IO (hFlush, stdout)
+import Text.Read (readMaybe)
 
 -----------------------------------------------
 -- Constantes de arquivos
@@ -46,14 +42,14 @@ carregarInventario = do
       case conteudoOuErro of
         Left _ -> pure Map.empty
         Right txt ->
-         case safeRead txt of
+          case safeRead txt of
             Just inv -> pure inv
-            Nothing  -> pure Map.empty
+            Nothing -> pure Map.empty
   where
-    safeRead :: Read a => String -> Maybe a
+    safeRead :: (Read a) => String -> Maybe a
     safeRead s = case reads s of
       [(x, "")] -> Just x
-      _         -> Nothing
+      _ -> Nothing
 
 salvarInventario :: Inventario -> IO ()
 salvarInventario inventario = writeFile arquivoInventario (show inventario)
@@ -65,7 +61,6 @@ salvarInventario inventario = writeFile arquivoInventario (show inventario)
 registrarAuditoria :: LogEntry -> IO ()
 registrarAuditoria le = appendFile arquivoAuditoria (show le <> "\n")
 
-
 carregarAuditoria :: IO [LogEntry]
 carregarAuditoria = do
   existe <- doesFileExist arquivoAuditoria
@@ -76,12 +71,15 @@ carregarAuditoria = do
       case conteudoOuErro of
         Left _ -> pure []
         Right txt -> pure (mapMaybeRead (lines txt))
-
   where
-    mapMaybeRead :: Read a => [String] -> [a]
-    mapMaybeRead = foldr (\ln acc -> case reads ln of
-                                        [(x, "")] -> x : acc
-                                        _ -> acc) []
+    mapMaybeRead :: (Read a) => [String] -> [a]
+    mapMaybeRead =
+      foldr
+        ( \ln acc -> case reads ln of
+            [(x, "")] -> x : acc
+            _ -> acc
+        )
+        []
 
 -----------------------------------------------
 -- Parseamento de comandos (texto -> ação)
@@ -96,7 +94,6 @@ data Comando
   | ComandoSair
   | ComandoDesconhecido String
 
-
 interpretarComando :: String -> Comando
 interpretarComando linha =
   case words (map toLower linha) of
@@ -109,7 +106,6 @@ interpretarComando linha =
     ["sair"] -> ComandoSair
     [] -> ComandoDesconhecido "Digite um comando"
     _ -> ComandoDesconhecido "Comando não reconhecido"
-
   where
     toLower :: Char -> Char
     toLower c
@@ -143,7 +139,6 @@ perguntarInteiro prompt = do
       putStrLn "Número inválido. Digite um número inteiro não-negativo."
       perguntarInteiro prompt
 
-
 executarComando :: Inventario -> Comando -> IO Inventario
 executarComando inventario cmd = case cmd of
   ComandoAdicionar -> do
@@ -164,7 +159,6 @@ executarComando inventario cmd = case cmd of
         registrarAuditoria logEntry
         putStrLn $ "Item adicionado com sucesso: " ++ nomeItem
         pure inventarioNovo
-
   ComandoRemover -> do
     putStrLn "\n--- Remover Item do Baú ---"
     let itens = Logic.listarItens inventario
@@ -190,7 +184,6 @@ executarComando inventario cmd = case cmd of
             registrarAuditoria logEntry
             putStrLn $ "Item removido com sucesso: " ++ itemID
             pure inventarioNovo
-
   ComandoUpdate -> do
     putStrLn "\n--- Atualizar Quantidade do Item ---"
     let itens = Logic.listarItens inventario
@@ -216,27 +209,22 @@ executarComando inventario cmd = case cmd of
             registrarAuditoria logEntry
             putStrLn $ "Item atualizado com sucesso: " ++ itemID
             pure inventarioNovo
-
   ComandoListar -> do
     let itens = Logic.listarItens inventario
     if null itens
       then putStrLn "Seu baú está vazio."
       else mapM_ printItem itens
     pure inventario
-
   ComandoReport -> do
     auditoria <- carregarAuditoria
     imprimirRelatorio auditoria
     pure inventario
-
   ComandoAjuda -> do
     imprimirAjuda
     pure inventario
-
   ComandoSair -> do
     putStrLn "Fechando o seu baú!"
     pure inventario
-
   ComandoDesconhecido msg -> do
     putStrLn $ "Comando desconhecido: " ++ msg
     pure inventario
@@ -255,11 +243,16 @@ mensagemErro agora acao detalhesTxt =
     }
 
 printItem :: Item -> IO ()
-printItem item = putStrLn $
-  "ID: " ++ itemID item ++
-  ", Nome: " ++ nome item ++
-  ", Quantidade: " ++ show (quantidade item) ++
-  ", Categoria: " ++ categoria item
+printItem item =
+  putStrLn $
+    "ID: "
+      ++ itemID item
+      ++ ", Nome: "
+      ++ nome item
+      ++ ", Quantidade: "
+      ++ show (quantidade item)
+      ++ ", Categoria: "
+      ++ categoria item
 
 imprimirRelatorio :: [LogEntry] -> IO ()
 imprimirRelatorio logs = do
@@ -274,10 +267,18 @@ imprimirRelatorio logs = do
       putStrLn "\nEstatisticas Gerais:"
       putStrLn "----------------------------------"
       putStrLn $ "Total de operacoes: " ++ show (totalRegistros resumo)
-      putStrLn $ "Operacoes bem-sucedidas: " ++ show (totalSucessos resumo) ++
-                 " (" ++ porcentagem (totalSucessos resumo) (totalRegistros resumo) ++ ")"
-      putStrLn $ "Operacoes com falha: " ++ show (totalFalhas resumo) ++
-                 " (" ++ porcentagem (totalFalhas resumo) (totalRegistros resumo) ++ ")"
+      putStrLn $
+        "Operacoes bem-sucedidas: "
+          ++ show (totalSucessos resumo)
+          ++ " ("
+          ++ porcentagem (totalSucessos resumo) (totalRegistros resumo)
+          ++ ")"
+      putStrLn $
+        "Operacoes com falha: "
+          ++ show (totalFalhas resumo)
+          ++ " ("
+          ++ porcentagem (totalFalhas resumo) (totalRegistros resumo)
+          ++ ")"
 
       putStrLn "\nFrequencia de Acoes:"
       putStrLn "----------------------------------"
@@ -293,10 +294,9 @@ imprimirRelatorio logs = do
         else do
           putStrLn "\nFalhas:"
           putStrLn "----------------------------------"
-          mapM_ imprimirFalha (zip [1..] falhas)
+          mapM_ imprimirFalha (zip [1 ..] falhas)
 
       putStrLn "\n==================================\n"
-
   where
     porcentagem :: Int -> Int -> String
     porcentagem parte total' =
@@ -310,8 +310,16 @@ imprimirRelatorio logs = do
 
     imprimirFalha :: (Int, LogEntry) -> IO ()
     imprimirFalha (num, logEntry) =
-      putStrLn $ "  " ++ show num ++ ". [" ++ show (acao logEntry) ++ "] " ++
-                 detalhes logEntry ++ " (" ++ show (timestamp logEntry) ++ ")"
+      putStrLn $
+        "  "
+          ++ show num
+          ++ ". ["
+          ++ show (acao logEntry)
+          ++ "] "
+          ++ detalhes logEntry
+          ++ " ("
+          ++ show (timestamp logEntry)
+          ++ ")"
 
 imprimirAjuda :: IO ()
 imprimirAjuda = do
@@ -364,5 +372,4 @@ loopComandos inventarioAtual = do
   inv <- executarComando inventarioAtual comando
   case comando of
     ComandoSair -> pure ()
-    _           -> loopComandos inv
-
+    _ -> loopComandos inv

@@ -1,45 +1,45 @@
 module Relatorio
-  ( historicoPorItem
-  , logsDeErro
-  , totalSucessoFalha
-  , totalPorAcao
-  , ResumoRelatorio(..)
-  , resumoRelatorio
-  , extrairItemId
-  ) where
-
-import qualified Data.Map.Strict as Map
-import Data.Maybe (mapMaybe)
-
-import Core.Data
-  ( ItemID
-  , AcaoLog(..)
-  , StatusLog(..)
-  , LogEntry(..)
+  ( historicoPorItem,
+    logsDeErro,
+    totalSucessoFalha,
+    totalPorAcao,
+    ResumoRelatorio (..),
+    resumoRelatorio,
+    extrairItemId,
   )
+where
+
+import Core.Data qualified as Data
+  ( AcaoLog (..),
+    ItemID,
+    LogEntry (..),
+    StatusLog (..),
+  )
+import Data.Map.Strict qualified as Map
+import Data.Maybe (mapMaybe)
 
 -----------------------------------------------
 -- Extração de informações dos logs
 -----------------------------------------------
 
 extrairItemId :: LogEntry -> Maybe ItemID
-extrairItemId LogEntry{detalhes = d} =
+extrairItemId LogEntry {detalhes = d} =
   case procurarPrefixo "id:" d of
     Nothing -> Nothing
     Just resto ->
       let itemID = takeWhile (\c -> c /= ' ' && c /= '/' && c /= ')' && c /= ',') resto
-      in if null itemID then Nothing else Just itemID
+       in if null itemID then Nothing else Just itemID
   where
-    procurarPrefixo :: Eq a => [a] -> [a] -> Maybe [a]
+    procurarPrefixo :: (Eq a) => [a] -> [a] -> Maybe [a]
     procurarPrefixo _ [] = Nothing
     procurarPrefixo pref xs
       | comecaCom pref xs = Just (drop (length pref) xs)
       | otherwise = procurarPrefixo pref (tail xs)
 
-    comecaCom :: Eq a => [a] -> [a] -> Bool
+    comecaCom :: (Eq a) => [a] -> [a] -> Bool
     comecaCom [] _ = True
     comecaCom _ [] = False
-    comecaCom (p:ps) (y:ys) = p == y && comecaCom ps ys
+    comecaCom (p : ps) (y : ys) = p == y && comecaCom ps ys
 
 -----------------------------------------------
 -- Filtros
@@ -52,7 +52,7 @@ historicoPorItem itemIDBusca =
 logsDeErro :: [LogEntry] -> [LogEntry]
 logsDeErro = filter ehFalha
   where
-    ehFalha LogEntry{status = Falha _} = True
+    ehFalha LogEntry {status = Falha _} = True
     ehFalha _ = False
 
 -----------------------------------------------
@@ -62,31 +62,31 @@ logsDeErro = filter ehFalha
 totalSucessoFalha :: [LogEntry] -> (Int, Int)
 totalSucessoFalha = foldr contarStatus (0, 0)
   where
-    contarStatus LogEntry{status = Sucesso} (ok, er) = (ok + 1, er)
-    contarStatus LogEntry{status = Falha _} (ok, er) = (ok, er + 1)
+    contarStatus LogEntry {status = Sucesso} (ok, er) = (ok + 1, er)
+    contarStatus LogEntry {status = Falha _} (ok, er) = (ok, er + 1)
 
 totalPorAcao :: [LogEntry] -> Map.Map AcaoLog Int
 totalPorAcao = foldr adicionarAcao Map.empty
   where
-    adicionarAcao LogEntry{acao = a} = Map.insertWith (+) a 1
+    adicionarAcao LogEntry {acao = a} = Map.insertWith (+) a 1
 
 -----------------------------------------------
 -- Resumo completo
 -----------------------------------------------
 data ResumoRelatorio = ResumoRelatorio
-  { totalRegistros :: Int
-  , totalSucessos :: Int
-  , totalFalhas :: Int
-  , porAcao :: Map.Map AcaoLog Int
+  { totalRegistros :: Int,
+    totalSucessos :: Int,
+    totalFalhas :: Int,
+    porAcao :: Map.Map AcaoLog Int
   }
   deriving (Show, Read, Eq)
 
 resumoRelatorio :: [LogEntry] -> ResumoRelatorio
 resumoRelatorio logs =
   let (sucessos, falhas) = totalSucessoFalha logs
-  in ResumoRelatorio
-      { totalRegistros = length logs
-      , totalSucessos = sucessos
-      , totalFalhas = falhas
-      , porAcao = totalPorAcao logs
-      }
+   in ResumoRelatorio
+        { totalRegistros = length logs,
+          totalSucessos = sucessos,
+          totalFalhas = falhas,
+          porAcao = totalPorAcao logs
+        }
